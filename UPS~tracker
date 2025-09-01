@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Mock UPS Tracking</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    .event { margin-bottom: 12px; padding: 8px; border-bottom: 1px solid #ddd; }
+    .customs { color: red; font-weight: bold; }
+    .in-transit { color: orange; }
+    .pending { color: blue; font-style: italic; }
+    .delivered { color: green; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>📦 Mock UPS Tracking</h2>
+  <input type="text" id="trackingNumber" placeholder="Enter Tracking ID">
+  <button onclick="track()">Track</button>
+  <div id="result"></div>
+
+  <script>
+    // Helper: format YYYY-MM-DD
+    function formatDate(date) {
+      return date.toISOString().split('T')[0];
+    }
+
+    // Generate customs inspection events for 60 days
+    function generateCustomsEvents(startDate, days) {
+      let events = [];
+      let d = new Date(startDate);
+      let today = new Date();
+
+      for (let i = 0; i < days; i++) {
+        let newDate = new Date(d);
+        newDate.setDate(d.getDate() + i);
+
+        if (newDate <= today) {
+          events.push({
+            date: formatDate(newDate),
+            location: "Shipment STOPPED",
+            status: "Under Customs inspection 🛃"
+          });
+        }
+      }
+      return events;
+    }
+
+    // Mock shipments database
+    const shipments = {
+      "MTS108424240US": [
+        { date: "2025-08-25", location: "Texas, USA", status: "Shipment created ✅" },
+        { date: "2025-08-26", location: "Fort Worth, Texas, USA (UPS Office)", status: "Picked up ✅" },
+        { date: "2025-08-27", location: "UPS Global Hub, Louisville, Kentucky 40209, USA", status: "In transit to Japan ✅" },
+        { date: "2025-08-28", location: "Customs Office, Hanedakuko, Ota City, Tokyo 144-0041, Japan", status: "Stopped at Japan Customs Office 🛂" },
+
+        // Dynamic daily Customs inspection logs
+        ...generateCustomsEvents("2025-09-01", 60),
+
+        { date: "Pending", location: "Local UPS Facility, Ota City, Tokyo 144-0041, Japan", status: "Out for delivery [Pending ❗️]" },
+        { date: "Pending", location: "Sagami, Seven Town Sengendai Store 1F, Koshigaya-city, Saitama, Japan", status: "Delivering [Pending ❗️]" }
+      ]
+    };
+
+    function track() {
+      const tn = document.getElementById("trackingNumber").value.trim();
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "";
+
+      if (shipments[tn]) {
+        shipments[tn].forEach(event => {
+          let cssClass = "";
+          if (event.status.toLowerCase().includes("customs")) cssClass = "customs";
+          if (event.status.toLowerCase().includes("delivered")) cssClass = "delivered";
+          if (event.status.toLowerCase().includes("in transit")) cssClass = "in-transit";
+          if (event.status.toLowerCase().includes("pending")) cssClass = "pending";
+
+          resultDiv.innerHTML += `
+            <div class="event ${cssClass}">
+              <b>${event.date}</b><br>
+              <i>${event.location}</i><br>
+              ${event.status}
+            </div>
+          `;
+        });
+      } else {
+        resultDiv.innerHTML = "<p style='color:red;'>❌ Tracking number not found</p>";
+      }
+    }
+  </script>
+</body>
+</html>
